@@ -1,0 +1,13 @@
+plugins {
+    id 'java'
+    id 'github.live.tracker.java-library-conventions'
+}
+
+repositories {
+    maven { url 'https://repo.spring.io/milestone' }
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.8.6'
+}
