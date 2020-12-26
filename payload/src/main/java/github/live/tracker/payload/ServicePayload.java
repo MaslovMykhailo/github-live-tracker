@@ -16,28 +16,25 @@ public class ServicePayload extends BasePayload {
         return new ServicePayload(data, BaseMetadata.getMetadataBytes(metadata));
     }
 
-    public static ServicePayload createStartTrackKeywordPayload(String keyword) {
-        ByteBuffer data = ByteBuffer
-            .allocate(keyword.length())
-            .put(keyword.getBytes());
-
-        return create(data, ServicePayloadMetadata.StartTrackKeyword);
+    public static ServicePayload create(String dataString, String metadata) {
+        ByteBuffer data = ByteBuffer.allocate(dataString.length()).put(dataString.getBytes()).flip();
+        return new ServicePayload(data, BaseMetadata.getMetadataBytes(metadata));
     }
 
-    public static ServicePayload createStopTrackKeywordPayload() {
-        return create(BasePayload.EmptyBuffer, ServicePayloadMetadata.StopTrackKeyword);
+    public static ServicePayload createStartTrackKeywordPayload(String keyword) {
+        return create(keyword, ServicePayloadMetadata.StartTrackKeyword);
+    }
+
+    public static ServicePayload createStopTrackKeywordPayload(String keyword) {
+        return create(keyword, ServicePayloadMetadata.StopTrackKeyword);
     }
 
     public static ServicePayload createStartTrackSourcePayload(String source) {
-        ByteBuffer data = ByteBuffer
-            .allocate(source.length())
-            .put(source.getBytes());
-
-        return create(data, ServicePayloadMetadata.StartTrackSource);
+        return create(source, ServicePayloadMetadata.StartTrackSource);
     }
 
-    public static ServicePayload createStopTrackSourcePayload() {
-        return create(BasePayload.EmptyBuffer, ServicePayloadMetadata.StopTrackSource);
+    public static ServicePayload createStopTrackSourcePayload(String source) {
+        return create(source, ServicePayloadMetadata.StopTrackSource);
     }
 
 }

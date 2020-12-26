@@ -1,6 +1,5 @@
 package implementations.h2;
 
-import github.GithubSearchCodeItemResponse;
 import implementations.github.GithubSearchWorkerTarget;
 import interfaces.WorkerStorage;
 import io.r2dbc.h2.H2Connection;

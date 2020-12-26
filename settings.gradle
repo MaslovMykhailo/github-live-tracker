@@ -1,3 +1,6 @@
 rootProject.name = 'github-live-tracker'
+
 include('app', 'payload')
 include ('unit', 'payload', 'response')
+include ('service', 'payload', 'response')
+

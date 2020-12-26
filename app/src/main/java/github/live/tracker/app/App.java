@@ -3,10 +3,9 @@
  */
 package github.live.tracker.app;
 
-import io.rsocket.SocketAcceptor;
-import io.rsocket.core.RSocketServer;
-import io.rsocket.transport.netty.server.CloseableChannel;
-import io.rsocket.transport.netty.server.TcpServerTransport;
+import io.r2dbc.mssql.MssqlConnection;
+import io.r2dbc.mssql.MssqlConnectionConfiguration;
+import io.r2dbc.mssql.MssqlConnectionFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -23,26 +22,75 @@ public class App {
 //        System.out.println(join(tokens));
 //    }
 
+    public static class Keyword {
+
+        public Keyword(int id, String word, String source) {
+            this.id = id;
+            this.word = word;
+            this.source = source;
+        }
+
+        public int id;
+
+        public String word;
+
+        public String source;
+
+    }
+
     public static void main(String[] args) throws SQLException, InterruptedException {
 
-        SocketAcceptor echoAcceptor =
-            SocketAcceptor.forRequestChannel(
-                payloads ->
-                    Flux.from(payloads)
-                        .doOnNext(payload -> {
-                            System.out.println("Meta: " + payload.getMetadataUtf8());
-                            System.out.println("Data: " + payload.getDataUtf8());
-                        })
+        MssqlConnectionConfiguration configuration = MssqlConnectionConfiguration.builder()
+            .host("206.81.16.43")
+            .port(1433)
+            .username("SA")
+            .password("MSsql-password")
+            .build();
+
+        MssqlConnectionFactory factory = new MssqlConnectionFactory(configuration);
+
+        MssqlConnection mssqlConnection = factory
+            .create()
+            .block();
+
+        mssqlConnection
+            .createStatement("SELECT * FROM Keywords")
+            .execute()
+            .flatMap(result -> result.map((row, metadata) -> {
+                Keyword record = new Keyword(
+                    row.get("Id", Integer.class),
+                    row.get("Word", String.class),
+                    row.get("Source", String.class)
+                );
+                return record;
+            }))
+            .doOnNext(k -> {
+                System.out.println(k.id);
+                System.out.println(k.word);
+                System.out.println(k.source);
+            })
+            .blockLast();
+
+        mssqlConnection
+            .close()
+            .block();
+
+//        SocketAcceptor echoAcceptor =
+//            SocketAcceptor.forRequestChannel(
+//                payloads ->
+//                    Flux.from(payloads)
+//                        .doOnNext(payload -> {
+//                            System.out.println("Meta: " + payload.getMetadataUtf8());
+//                            System.out.println("Data: " + payload.getDataUtf8());
+//                        })
 //                        .map(Payload::getDataUtf8)
 //                        .map(s -> "Echo: " + s)
 //                        .map(DefaultPayload::create)
-            );
+//            );
 
-        RSocketServer.create(echoAcceptor)
-            .bind(TcpServerTransport.create("localhost", 7000))
-            .subscribe();
-
-        Thread.sleep(100000000000000000L);
+//        RSocketServer.create(echoAcceptor)
+//            .bind(TcpServerTransport.create("localhost", 7000))
+//            .subscribe();
 
 //        CloseableConnectionFactory connectionFactory = H2ConnectionFactory.inMemory("tracker");
 //        H2Connection connection = connectionFactory.create().block();
@@ -52,15 +100,33 @@ public class App {
 //                "keyword varchar(255), " +
 //                "source varchar(255), " +
 //                "sha varchar(255), " +
-//                "index_timestamp current_timestamp, " +
+//                "index_timestamp timestamp default current_timestamp, " +
 //                "record clob" +
-//            ")";
+//                ")";
 //
 //        connection
 //            .createStatement(statement)
 //            .execute()
 //            .doOnNext(System.out::println)
 //            .blockLast();
+//
+//        Thread.sleep(6 * 60 * 1000);
+//
+//        connection
+//            .createStatement("select * from keyword_record")
+//            .execute()
+//            .doOnNext(result -> {
+//                System.out.println(result.toString());
+//                result.map((row, metadata) -> {
+//                    metadata.getColumnNames().forEach(name -> {
+//                        System.out.println(row.get(name));
+//                    });
+//                    return null;
+//                })
+//                .blockLast();
+//            })
+//            .blockLast();
+
 //
 //                connection
 //            .createStatement("INSERT INTO KEYWORD_RECORD ('KEYWORD', 'SOURCE', 'RECORD') VALUES ($1, $2, $3)")

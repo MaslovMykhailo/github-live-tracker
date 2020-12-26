@@ -10,7 +10,6 @@ import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
-import io.rsocket.util.DefaultPayload;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -57,7 +56,11 @@ public class Unit {
             .requestChannel(unitLifeCycle.asFlux())
             .doOnSubscribe(this::init)
             .doOnNext(this::handleChannelResponse)
-            .doFinally(signal -> rSocket.dispose())
+            .doFinally(signal -> {
+                if (!rSocket.isDisposed()) {
+                    rSocket.dispose();
+                }
+            })
             .then()
             .block();
     }
@@ -73,7 +76,7 @@ public class Unit {
                 startTrackKeyword(payload.getDataUtf8());
             }
             case ServicePayloadMetadata.StopTrackKeyword -> {
-                stopTrackKeyword();
+                stopTrackKeyword(payload.getDataUtf8());
             }
             case ServicePayloadMetadata.StartTrackSource -> {
                 startTrackSource(payload.getDataUtf8());
@@ -102,16 +105,20 @@ public class Unit {
     private void startTrackKeyword(String keyword) {
         workerPullDisposable = workerPull
             .start(keyword)
-            .doOnNext(update -> {
-                unitLifeCycle.emitNext(
-                    UnitPayload.createUnitUpdatePayload(update.toJSON()),
-                    Sinks.EmitFailureHandler.FAIL_FAST
-                );
-            })
+//            .doOnNext(update -> {
+//                unitLifeCycle.emitNext(
+//                    UnitPayload.createUnitUpdatePayload(update.toJSON()),
+//                    Sinks.EmitFailureHandler.FAIL_FAST
+//                );
+//            })
             .subscribe();
     }
 
-    private void stopTrackKeyword() {
+    private void stopTrackKeyword(String keyword) {
+        if (!workerPull.getKeyword().equals(keyword)) {
+            return;
+        }
+
         if (!workerPullDisposable.isDisposed()) {
             workerPullDisposable.dispose();
         }

@@ -16,16 +16,17 @@ public class UnitPayload extends BasePayload {
         return new UnitPayload(data, BaseMetadata.getMetadataBytes(metadata));
     }
 
+    public static UnitPayload create(String dataString, String metadata) {
+        ByteBuffer data = ByteBuffer.allocate(dataString.length()).put(dataString.getBytes()).flip();
+        return new UnitPayload(data, BaseMetadata.getMetadataBytes(metadata));
+    }
+
     public static UnitPayload createUnitInitPayload() {
         return create(BasePayload.EmptyBuffer, UnitPayloadMetadata.UnitInit);
     }
 
     public static UnitPayload createUnitUpdatePayload(String update) {
-        ByteBuffer data = ByteBuffer
-            .allocate(update.length())
-            .put(update.getBytes());
-
-        return create(data, UnitPayloadMetadata.UnitUpdate);
+        return create(update, UnitPayloadMetadata.UnitUpdate);
     }
 
 }

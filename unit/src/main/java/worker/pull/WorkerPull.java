@@ -35,6 +35,10 @@ public class WorkerPull<T extends WorkerTarget> {
 
     private String keyword;
 
+    public String getKeyword() {
+        return keyword;
+    }
+
     public Flux<T> start(String keyword) {
         this.keyword = keyword;
 

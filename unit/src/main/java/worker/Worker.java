@@ -82,7 +82,7 @@ public class Worker<T extends WorkerTarget> {
             .onBackpressureBuffer()
             .flatMap(target -> storage.store(target, configuration))
             .doOnNext(next -> {
-                if (cancelled) {
+                if (cancelled && !storageDisposable.isDisposed()) {
                     storageDisposable.dispose();
                 }
             })
