@@ -26,6 +26,10 @@ public class KeywordSinksCache {
         return keywordSinks.get(keyword);
     }
 
+    public synchronized int getSize() {
+        return keywordSinks.size();
+    }
+
     public static class Record {
 
         public final Sinks.Many<Payload> sink;

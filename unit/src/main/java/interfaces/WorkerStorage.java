@@ -8,8 +8,6 @@ public interface WorkerStorage<T> {
 
     Mono<Void> store(Flux<T> target, WorkerConfiguration configuration);
 
-    Flux<T> getLatest(WorkerConfiguration configuration);
-
     Flux<String> getLatestIdentity(WorkerConfiguration configuration);
 
 }

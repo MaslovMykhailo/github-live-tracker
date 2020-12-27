@@ -25,8 +25,8 @@ public class UnitPayload extends BasePayload {
         return create(BasePayload.EmptyBuffer, UnitPayloadMetadata.UnitInit);
     }
 
-    public static UnitPayload createUnitErrorPayload(String update) {
-        return create(update, UnitPayloadMetadata.UnitError);
+    public static UnitPayload createUnitErrorPayload(String keywordSource) {
+        return create(keywordSource, UnitPayloadMetadata.UnitError);
     }
 
 }

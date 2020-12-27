@@ -1,5 +1,7 @@
 package worker.pull;
 
+import model.Limits;
+
 import java.time.Duration;
 
 public class WorkerPullLimits {
@@ -31,6 +33,17 @@ public class WorkerPullLimits {
 
     public Duration getExecutionRate() {
         return timeRange.dividedBy(executionCount);
+    }
+
+    public Limits toLimits() {
+        return new Limits(timeRange.toMillis(), executionCount);
+    }
+
+    public static WorkerPullLimits fromLimits(Limits limits) {
+        return new WorkerPullLimits(
+            Duration.ofMillis(limits.timeRangeMillis),
+            limits.executionCount
+        );
     }
 
 }

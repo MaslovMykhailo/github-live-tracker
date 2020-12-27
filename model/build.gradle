@@ -14,4 +14,6 @@ dependencies {
     testCompile "io.projectreactor:reactor-test:3.4.1"
 
     implementation 'io.r2dbc:r2dbc-mssql:0.8.5.RELEASE'
+
+    implementation 'com.google.code.gson:gson:2.8.6'
 }

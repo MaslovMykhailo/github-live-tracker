@@ -1,5 +1,7 @@
 package model;
 
+import com.google.gson.Gson;
+
 import java.util.Objects;
 
 public class KeywordSource {
@@ -27,6 +29,23 @@ public class KeywordSource {
     @Override
     public int hashCode() {
         return Objects.hash(id, word, source);
+    }
+
+    @Override
+    public String toString() {
+        return "KeywordSource{" +
+            "id=" + id +
+            ", word='" + word + '\'' +
+            ", source='" + source + '\'' +
+            '}';
+    }
+
+    public String toJSON() {
+        return new Gson().toJson(this);
+    }
+
+    public static KeywordSource fromJSON(String json) {
+        return new Gson().fromJson(json, KeywordSource.class);
     }
 
 }

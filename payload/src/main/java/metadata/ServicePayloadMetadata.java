@@ -10,4 +10,6 @@ public abstract class ServicePayloadMetadata {
 
     public static final String StopTrackSource = "StopTrackSource";
 
+    public static final String UpdateLimits = "UpdateLimits";
+
 }

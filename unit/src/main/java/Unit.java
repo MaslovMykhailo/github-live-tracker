@@ -1,4 +1,3 @@
-import metadata.ServicePayloadMetadata;
 import implementations.github.GithubSearchWorkerData;
 import implementations.github.GithubSearchWorkerTarget;
 import implementations.mssql.MssqlWorkerStorage;
@@ -11,12 +10,22 @@ import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
+import metadata.ServicePayloadMetadata;
+import model.KeywordSource;
+import model.Limits;
 import org.reactivestreams.Subscription;
 import payload.UnitPayload;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 import reactor.netty.http.client.HttpClient;
+import reactor.util.Logger;
+import reactor.util.Loggers;
+import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
+import worker.configuration.WorkerConfiguration;
+import worker.exception.InvalidResponseException;
 import worker.pull.WorkerPull;
 import worker.pull.WorkerPullLimits;
 
@@ -25,41 +34,54 @@ import java.time.Duration;
 public class Unit {
 
     public static void main(String... args) {
-        new Unit().run();
-    }
-
-    public void run() {
-
         String host = "localhost";
         int port = 7000;
-
-        TcpClientTransport transport = TcpClientTransport.create(host, port);
-        RSocket rSocket = RSocketConnector.connectWith(transport).block();
-
-        workerData = new GithubSearchWorkerData(
-            HttpClient.create()
-        );
 
         MssqlConnectionConfiguration configuration = MssqlConnectionConfiguration.builder()
             .build();
 
-        MssqlConnectionFactory factory = new MssqlConnectionFactory(configuration);
+        new Unit(host, port, configuration).run();
+    }
 
-        MssqlConnection mssqlConnection = factory
-            .create()
+    private final RetryBackoffSpec retrySpec = Retry
+        .backoff(Long.MAX_VALUE, Duration.ofMillis(1))
+        .maxBackoff(Duration.ofSeconds(10));
+
+    public Unit(String host, int port, MssqlConnectionConfiguration mssqlConfiguration) {
+        rSocket = RSocketConnector
+            .connectWith(TcpClientTransport.create(host, port))
+            .retryWhen(retrySpec)
             .block();
 
+        HttpClient httpClient = HttpClient.create();
+
+        MssqlConnection mssqlConnection = new MssqlConnectionFactory(mssqlConfiguration)
+            .create()
+            .retryWhen(retrySpec)
+            .block();
+
+        workerData = new GithubSearchWorkerData(httpClient);
         workerStorage = new MssqlWorkerStorage(mssqlConnection);
+    }
+
+    private final Logger logger = Loggers.getLogger(Unit.class);
+
+    private final RSocket rSocket;
+
+    private final WorkerData<GithubSearchWorkerTarget> workerData;
+
+    private final WorkerStorage<GithubSearchWorkerTarget> workerStorage;
+
+    public void run() {
+        logger.info("Unit running...");
 
         rSocket
             .requestChannel(unitLifeCycle.asFlux())
-            .doOnSubscribe(this::init)
+            .doOnSubscribe(this::emitInit)
             .doOnNext(this::handleChannelResponse)
-            .doFinally(signal -> {
-                if (!rSocket.isDisposed()) {
-                    rSocket.dispose();
-                }
-            })
+            .publishOn(Schedulers.parallel())
+            .retryWhen(retrySpec)
+            .doFinally(signal -> rSocket.dispose())
             .then()
             .block();
     }
@@ -83,29 +105,51 @@ public class Unit {
             case ServicePayloadMetadata.StopTrackSource -> {
                 stopTrackSource(payload.getDataUtf8());
             }
+            case ServicePayloadMetadata.UpdateLimits -> {
+                updateLimits(Limits.fromJSON(payload.getDataUtf8()));
+            }
         }
     }
 
-    private void init(Subscription subscription) {
+    private void emitInit(Subscription subscription) {
         unitLifeCycle.emitNext(
             UnitPayload.createUnitInitPayload(),
             Sinks.EmitFailureHandler.FAIL_FAST
         );
     }
 
+    private void emitError(Throwable throwable, Object object) {
+        if (throwable instanceof InvalidResponseException) {
+            WorkerConfiguration configuration = ((InvalidResponseException) throwable).configuration;
+            KeywordSource keywordSource = new KeywordSource(
+                -1,
+                configuration.getKeyword(),
+                configuration.getSource()
+            );
+
+            unitLifeCycle.emitNext(
+                UnitPayload.createUnitErrorPayload(keywordSource.toJSON()),
+                Sinks.EmitFailureHandler.FAIL_FAST
+            );
+        }
+    }
+
     WorkerPull<GithubSearchWorkerTarget> workerPull = new WorkerPull<>(
         new WorkerPullLimits(
-            Duration.ofMinutes(1),
+            Duration.ofSeconds(90),
             10
         )
-    );
+    );s
 
     private Disposable workerPullDisposable = Disposables.disposed();
 
     private void startTrackKeyword(String keyword) {
         workerPullDisposable = workerPull
             .start(keyword)
+            .onErrorContinue(InvalidResponseException.class, this::emitError)
             .subscribe();
+
+        logger.info("Start track keyword " + keyword);
     }
 
     private void stopTrackKeyword(String keyword) {
@@ -113,23 +157,29 @@ public class Unit {
             return;
         }
 
+        workerPull.stop();
+
         if (!workerPullDisposable.isDisposed()) {
             workerPullDisposable.dispose();
         }
 
-        workerPull.stop();
+
+        logger.info("Stop track keyword " + keyword);
     }
-
-    private WorkerData<GithubSearchWorkerTarget> workerData;
-
-    private WorkerStorage<GithubSearchWorkerTarget> workerStorage;
 
     private void startTrackSource(String source) {
         workerPull.addTrackingSource(source, workerData, workerStorage);
+        logger.info("Start track source " + source + " for keyword " + workerPull.getKeyword());
     }
 
     private void stopTrackSource(String source) {
         workerPull.removeTrackingSource(source);
+        logger.info("Stop track source " + source + " for keyword " + workerPull.getKeyword());
+    }
+
+    private void updateLimits(Limits limits) {
+        workerPull.setLimits(WorkerPullLimits.fromLimits(limits));
+        logger.info("Update limits " + limits);
     }
 
 }

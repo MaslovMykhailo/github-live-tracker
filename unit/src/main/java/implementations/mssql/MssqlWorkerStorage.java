@@ -73,10 +73,6 @@ public class MssqlWorkerStorage implements WorkerStorage<GithubSearchWorkerTarge
             .then();
     }
 
-    public Flux<GithubSearchWorkerTarget> getLatest(WorkerConfiguration configuration) {
-        return Flux.empty();
-    }
-
     public Flux<String> getLatestIdentity(WorkerConfiguration configuration) {
         return connection
             .createStatement(

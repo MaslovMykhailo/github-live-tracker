@@ -37,4 +37,8 @@ public class ServicePayload extends BasePayload {
         return create(source, ServicePayloadMetadata.StopTrackSource);
     }
 
+    public static ServicePayload createUpdateLimitsPayload(String limits) {
+        return create(limits, ServicePayloadMetadata.UpdateLimits);
+    }
+
 }

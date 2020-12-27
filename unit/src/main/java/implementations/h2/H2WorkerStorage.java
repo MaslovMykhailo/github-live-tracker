@@ -55,11 +55,8 @@ public class H2WorkerStorage implements WorkerStorage<GithubSearchWorkerTarget> 
             .then();
     }
 
-    public Flux<GithubSearchWorkerTarget> getLatest(WorkerConfiguration configuration) {
-        return Flux.just();
-    }
-
     public Flux<String> getLatestIdentity(WorkerConfiguration configuration) {
         return Flux.just();
     }
+
 }

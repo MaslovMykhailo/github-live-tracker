@@ -46,16 +46,14 @@ public class KeywordSourceUpdateEmitter {
                     .forEach(record -> addedRecordsSink
                         .emitNext(record, Sinks.EmitFailureHandler.FAIL_FAST)
                     );
-            })
-            .doOnNext(records -> {
+
                 difference(recordsCache, records)
                     .stream()
                     .parallel()
-                    .forEach(record -> addedRecordsSink
+                    .forEach(record -> removedRecordsSink
                         .emitNext(record, Sinks.EmitFailureHandler.FAIL_FAST)
                     );
-            })
-            .doOnNext(records -> {
+
                 recordsCache.clear();
                 recordsCache.addAll(records);
             })

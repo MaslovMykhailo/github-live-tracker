@@ -4,9 +4,14 @@ import github.GithubSearchCodeResponse;
 import interfaces.WorkerData;
 import reactor.core.publisher.Flux;
 import reactor.netty.http.client.HttpClient;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import worker.configuration.WorkerConfiguration;
+import worker.exception.InvalidResponseException;
 
 public class GithubSearchWorkerData implements WorkerData<GithubSearchWorkerTarget> {
+
+    private final Logger logger = Loggers.getLogger(GithubSearchWorkerData.class);
 
     private final HttpClient client;
 
@@ -21,13 +26,17 @@ public class GithubSearchWorkerData implements WorkerData<GithubSearchWorkerTarg
             .responseContent()
             .aggregate()
             .asString()
-            .flatMapMany(response -> Flux
-                .fromArray(GithubSearchCodeResponse
-                    .fromJSON(response)
-                    .items
-                )
-                .map(GithubSearchWorkerTarget::fromSearchResponse)
-            );
+            .flatMapMany(response -> {
+                GithubSearchCodeResponse searchResponse = GithubSearchCodeResponse.fromJSON(response);
+
+                if (searchResponse.items == null) {
+                    logger.info("Request data fail\n" + response);
+                    return Flux.error(new InvalidResponseException(configuration));
+                }
+
+                return Flux.fromArray(searchResponse.items);
+            })
+            .map(GithubSearchWorkerTarget::fromSearchResponse);
     }
 
     private String buildUri(String searchBy, String searchIn) {

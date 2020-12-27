@@ -1,22 +1,23 @@
 package worker.pull;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
-import worker.*;
 import interfaces.WorkerData;
 import interfaces.WorkerStorage;
 import interfaces.WorkerTarget;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+import worker.Worker;
 import worker.configuration.WorkerConfiguration;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.function.Function;
 
 public class WorkerPull<T extends WorkerTarget> {
 
-    private int currentWorkerIndex = 0;
-
-    private final Map<String, Worker<T>> workers = new HashMap<>();
+    private final WorkersQueue queue = new WorkersQueue();
 
     private final Sinks.Many<Duration> executionRate = Sinks
         .many()
@@ -46,62 +47,40 @@ public class WorkerPull<T extends WorkerTarget> {
         return executionRate
             .asFlux()
             .doOnSubscribe(subscription -> emitExecutionRate())
-            .switchMap(duration -> Flux
-                .interval(
-                    workers.size() == 0 ? Duration.ZERO : duration,
-                    duration
-                )
-            )
+            .switchMap((Function<Duration, Publisher<? extends Long>>) Flux::interval)
             .flatMap(interval -> {
-                if (workers.isEmpty()) {
+                if (queue.isEmpty()) {
                     return Flux.empty();
                 }
 
-                return nextWorker().execute();
+                return queue.nextSourceWorker().execute();
             });
     }
 
     public void stop() {
         keyword = null;
-        currentWorkerIndex = 0;
-        workers.clear();
+        queue.clear();
     }
 
-    public synchronized void addTrackingSource(
+    public void addTrackingSource(
         String source,
         WorkerData<T> data,
         WorkerStorage<T> storage
     ) {
-        if (workers.containsKey(source)) {
-            return;
-        }
+        WorkerConfiguration configuration = new WorkerConfiguration(
+            keyword,
+            source,
+            100
+        );
 
-        workers.put(source, new Worker<T>(
-            data,
-            storage,
-            new WorkerConfiguration(keyword, source, 100))
+        queue.addSourceWorker(
+            source,
+            new Worker<>(data, storage, configuration)
         );
     }
 
-    public synchronized void removeTrackingSource(String source) {
-        if (!workers.containsKey(source)) {
-            return;
-        }
-
-        workers.remove(source);
-    }
-
-    private Worker<T> nextWorker() {
-        @SuppressWarnings("unchecked")
-        Worker<T> worker = workers.values().toArray(Worker[]::new)[currentWorkerIndex];
-
-        if (currentWorkerIndex == workers.values().size() - 1) {
-            currentWorkerIndex = 0;
-        } else {
-            currentWorkerIndex++;
-        }
-
-        return worker;
+    public void removeTrackingSource(String source) {
+        queue.removeSourceWorker(source);
     }
 
     private void emitExecutionRate() {
@@ -109,6 +88,47 @@ public class WorkerPull<T extends WorkerTarget> {
             limits.getExecutionRate(),
             Sinks.EmitFailureHandler.FAIL_FAST
         );
+    }
+
+    private class WorkersQueue {
+
+        private final Map<String, Worker<T>> workers = new HashMap<>();
+
+        private final LinkedList<String> sourceQueue = new LinkedList<>();
+
+        public synchronized void addSourceWorker(String source, Worker<T> worker) {
+            if (workers.containsKey(source)) {
+                return;
+            }
+
+            workers.put(source, worker);
+            sourceQueue.add(source);
+        }
+
+        public synchronized void removeSourceWorker(String source) {
+            if (!workers.containsKey(source)) {
+                return;
+            }
+
+            workers.remove(source);
+            sourceQueue.remove(source);
+        }
+
+        public synchronized Worker<T> nextSourceWorker() {
+            String nextSource = sourceQueue.poll();
+            sourceQueue.add(nextSource);
+            return workers.get(nextSource);
+        }
+
+        public synchronized void clear() {
+            workers.clear();
+            sourceQueue.clear();
+        }
+
+        public synchronized boolean isEmpty() {
+            return workers.isEmpty();
+        }
+
     }
 
 }
