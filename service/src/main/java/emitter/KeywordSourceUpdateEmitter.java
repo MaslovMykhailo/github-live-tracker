@@ -34,8 +34,10 @@ public class KeywordSourceUpdateEmitter {
         updatesDisposable = Flux
             .interval(pollingInterval)
             .onBackpressureDrop()
-            .flatMap(interval -> storage.getKeywordRecords())
-            .collectList()
+            .flatMap(interval -> storage
+                .getKeywordRecords()
+                .collectList()
+            )
             .map(HashSet::new)
             .doOnNext(records -> {
                 difference(records, recordsCache)
@@ -52,6 +54,10 @@ public class KeywordSourceUpdateEmitter {
                     .forEach(record -> addedRecordsSink
                         .emitNext(record, Sinks.EmitFailureHandler.FAIL_FAST)
                     );
+            })
+            .doOnNext(records -> {
+                recordsCache.clear();
+                recordsCache.addAll(records);
             })
             .publishOn(Schedulers.parallel())
             .subscribe();

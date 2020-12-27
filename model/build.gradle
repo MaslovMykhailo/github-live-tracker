@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+    id 'github.live.tracker.java-library-conventions'
+}
+
+repositories {
+    maven { url 'https://repo.spring.io/milestone' }
+    mavenCentral()
+}
+
+dependencies {
+    compile "io.projectreactor:reactor-core:3.4.1"
+    implementation "io.projectreactor:reactor-tools:3.4.1"
+    testCompile "io.projectreactor:reactor-test:3.4.1"
+
+    implementation 'io.r2dbc:r2dbc-mssql:0.8.5.RELEASE'
+}

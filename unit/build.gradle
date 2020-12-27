@@ -9,6 +9,7 @@ repositories {
 }
 
 dependencies {
+    implementation project(':model')
     implementation project(':payload')
     implementation project(':response')
 
@@ -16,6 +17,7 @@ dependencies {
     compile "io.projectreactor.netty:reactor-netty-http:1.0.2"
 
     implementation 'io.r2dbc:r2dbc-h2:0.8.4.RELEASE'
+    implementation 'io.r2dbc:r2dbc-mssql:0.8.5.RELEASE'
 
     implementation 'io.rsocket:rsocket-core:1.1.0'
     implementation 'io.rsocket:rsocket-transport-netty:1.1.0'

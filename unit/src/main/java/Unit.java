@@ -1,16 +1,18 @@
-import github.live.tracker.payload.UnitPayload;
-import github.live.tracker.payload.metadata.ServicePayloadMetadata;
+import metadata.ServicePayloadMetadata;
 import implementations.github.GithubSearchWorkerData;
 import implementations.github.GithubSearchWorkerTarget;
-import implementations.h2.H2WorkerStorage;
+import implementations.mssql.MssqlWorkerStorage;
 import interfaces.WorkerData;
 import interfaces.WorkerStorage;
-import io.r2dbc.h2.H2ConnectionFactory;
+import io.r2dbc.mssql.MssqlConnection;
+import io.r2dbc.mssql.MssqlConnectionConfiguration;
+import io.r2dbc.mssql.MssqlConnectionFactory;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import org.reactivestreams.Subscription;
+import payload.UnitPayload;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.publisher.Sinks;
@@ -28,14 +30,6 @@ public class Unit {
 
     public void run() {
 
-        // connect to the master server
-        // wait for keyword and source for polling
-        // if limits are not exceeded delegate new worker creation
-        // update api limits before new worker creation
-        // do not create new worker if keyword already have been polling by existed worker
-        // send new data to master server
-        // remove worker
-
         String host = "localhost";
         int port = 7000;
 
@@ -45,12 +39,17 @@ public class Unit {
         workerData = new GithubSearchWorkerData(
             HttpClient.create()
         );
-        workerStorage = new H2WorkerStorage(
-            H2ConnectionFactory
-                .inMemory("tracker")
-                .create()
-                .block()
-        );
+
+        MssqlConnectionConfiguration configuration = MssqlConnectionConfiguration.builder()
+            .build();
+
+        MssqlConnectionFactory factory = new MssqlConnectionFactory(configuration);
+
+        MssqlConnection mssqlConnection = factory
+            .create()
+            .block();
+
+        workerStorage = new MssqlWorkerStorage(mssqlConnection);
 
         rSocket
             .requestChannel(unitLifeCycle.asFlux())
@@ -97,7 +96,8 @@ public class Unit {
     WorkerPull<GithubSearchWorkerTarget> workerPull = new WorkerPull<>(
         new WorkerPullLimits(
             Duration.ofMinutes(1),
-            10)
+            10
+        )
     );
 
     private Disposable workerPullDisposable = Disposables.disposed();
@@ -105,12 +105,6 @@ public class Unit {
     private void startTrackKeyword(String keyword) {
         workerPullDisposable = workerPull
             .start(keyword)
-//            .doOnNext(update -> {
-//                unitLifeCycle.emitNext(
-//                    UnitPayload.createUnitUpdatePayload(update.toJSON()),
-//                    Sinks.EmitFailureHandler.FAIL_FAST
-//                );
-//            })
             .subscribe();
     }
 

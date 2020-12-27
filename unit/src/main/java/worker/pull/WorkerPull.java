@@ -6,6 +6,7 @@ import worker.*;
 import interfaces.WorkerData;
 import interfaces.WorkerStorage;
 import interfaces.WorkerTarget;
+import worker.configuration.WorkerConfiguration;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -39,7 +40,7 @@ public class WorkerPull<T extends WorkerTarget> {
         return keyword;
     }
 
-    public Flux<T> start(String keyword) {
+    public Flux<Void> start(String keyword) {
         this.keyword = keyword;
 
         return executionRate
@@ -63,8 +64,6 @@ public class WorkerPull<T extends WorkerTarget> {
     public void stop() {
         keyword = null;
         currentWorkerIndex = 0;
-
-        workers.values().forEach(Worker::cancel);
         workers.clear();
     }
 
@@ -89,7 +88,6 @@ public class WorkerPull<T extends WorkerTarget> {
             return;
         }
 
-        workers.get(source).cancel();
         workers.remove(source);
     }
 

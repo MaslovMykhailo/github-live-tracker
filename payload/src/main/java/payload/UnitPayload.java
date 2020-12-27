@@ -1,7 +1,7 @@
-package github.live.tracker.payload;
+package payload;
 
-import github.live.tracker.payload.metadata.BaseMetadata;
-import github.live.tracker.payload.metadata.UnitPayloadMetadata;
+import metadata.BaseMetadata;
+import metadata.UnitPayloadMetadata;
 import reactor.util.annotation.Nullable;
 
 import java.nio.ByteBuffer;
@@ -25,8 +25,8 @@ public class UnitPayload extends BasePayload {
         return create(BasePayload.EmptyBuffer, UnitPayloadMetadata.UnitInit);
     }
 
-    public static UnitPayload createUnitUpdatePayload(String update) {
-        return create(update, UnitPayloadMetadata.UnitUpdate);
+    public static UnitPayload createUnitErrorPayload(String update) {
+        return create(update, UnitPayloadMetadata.UnitError);
     }
 
 }

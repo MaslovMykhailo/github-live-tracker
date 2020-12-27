@@ -1,4 +1,4 @@
-package github.live.tracker.payload.metadata;
+package metadata;
 
 public abstract class ServicePayloadMetadata {
 

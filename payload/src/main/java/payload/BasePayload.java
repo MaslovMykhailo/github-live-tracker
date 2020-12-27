@@ -1,4 +1,4 @@
-package github.live.tracker.payload;
+package payload;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

@@ -1,4 +1,4 @@
-package worker;
+package worker.configuration;
 
 public class WorkerConfiguration {
 
@@ -25,13 +25,5 @@ public class WorkerConfiguration {
     public int getPageSize() {
         return pageSize;
     }
-
-//    public static WorkerConfiguration create(String keyword, String source, int pageSize) {
-//        return new WorkerConfiguration(keyword, source, pageSize);
-//    }
-//
-//    public static WorkerConfiguration create(String keyword, String source) {
-//        return create(keyword, source, 100);
-//    }
 
 }

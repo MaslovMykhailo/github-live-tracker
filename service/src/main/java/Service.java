@@ -1,8 +1,6 @@
 import cache.IdledSinksCache;
 import cache.KeywordSinksCache;
 import emitter.KeywordSourceUpdateEmitter;
-import github.live.tracker.payload.ServicePayload;
-import github.live.tracker.payload.metadata.UnitPayloadMetadata;
 import implementations.mssql.MssqlKeywordSourceStorage;
 import io.r2dbc.mssql.MssqlConnection;
 import io.r2dbc.mssql.MssqlConnectionConfiguration;
@@ -11,8 +9,10 @@ import io.rsocket.Payload;
 import io.rsocket.SocketAcceptor;
 import io.rsocket.core.RSocketServer;
 import io.rsocket.transport.netty.server.TcpServerTransport;
+import metadata.UnitPayloadMetadata;
 import model.KeywordSource;
 import org.reactivestreams.Publisher;
+import payload.ServicePayload;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
@@ -35,7 +35,7 @@ public class Service {
             .create()
             .block();
 
-        KeywordSourceUpdateEmitter updateEmitter = new KeywordSourceUpdateEmitter(
+        updateEmitter = new KeywordSourceUpdateEmitter(
             new MssqlKeywordSourceStorage(mssqlConnection),
             Duration.ofSeconds(10)
         );
@@ -55,10 +55,11 @@ public class Service {
                     .doOnNext(this::onUnsubscribeKeywordSource)
             )
             .publishOn(Schedulers.parallel())
-            .doOnSubscribe(subscription -> updateEmitter.startListenUpdates())
             .then()
             .block();
     }
+
+    private KeywordSourceUpdateEmitter updateEmitter;
 
     private Sinks.Many<Payload> createKeywordSink() {
         return Sinks.many().unicast().onBackpressureBuffer();
@@ -66,20 +67,23 @@ public class Service {
 
     private final IdledSinksCache idledKeywordSinks = new IdledSinksCache();
 
-    private final KeywordSinksCache keywordSinks = new KeywordSinksCache();
-
     private Flux<Payload> onRequestChannel(Publisher<Payload> payloadPublisher) {
         return Flux
             .from(payloadPublisher)
             .flatMap(payload -> {
                 if (UnitPayloadMetadata.UnitInit.equals(payload.getMetadataUtf8())) {
-                    return idledKeywordSinks.addIdledSink(createKeywordSink()).asFlux();
+                    return idledKeywordSinks
+                        .addIdledSink(createKeywordSink())
+                        .asFlux();
                 }
 
                 return Flux.empty();
             })
-            .publishOn(Schedulers.parallel());
+            .publishOn(Schedulers.parallel())
+            .doFirst(() -> updateEmitter.startListenUpdates());
     }
+
+    private final KeywordSinksCache keywordSinks = new KeywordSinksCache();
 
     private void onSubscribeKeywordSource(KeywordSource record) {
         Sinks.Many<Payload> keywordSink;

@@ -1,4 +1,4 @@
-package implementations.mssql;
+package mapper;
 
 import io.r2dbc.mssql.MssqlResult;
 import io.r2dbc.spi.Row;

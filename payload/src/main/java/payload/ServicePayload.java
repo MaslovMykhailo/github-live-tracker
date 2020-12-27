@@ -1,7 +1,7 @@
-package github.live.tracker.payload;
+package payload;
 
-import github.live.tracker.payload.metadata.BaseMetadata;
-import github.live.tracker.payload.metadata.ServicePayloadMetadata;
+import metadata.BaseMetadata;
+import metadata.ServicePayloadMetadata;
 import reactor.util.annotation.Nullable;
 
 import java.nio.ByteBuffer;

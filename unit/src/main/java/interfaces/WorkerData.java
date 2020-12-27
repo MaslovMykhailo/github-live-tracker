@@ -1,7 +1,7 @@
 package interfaces;
 
 import reactor.core.publisher.Flux;
-import worker.WorkerConfiguration;
+import worker.configuration.WorkerConfiguration;
 
 public interface WorkerData<T> {
 

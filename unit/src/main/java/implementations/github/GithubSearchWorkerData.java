@@ -4,7 +4,7 @@ import github.GithubSearchCodeResponse;
 import interfaces.WorkerData;
 import reactor.core.publisher.Flux;
 import reactor.netty.http.client.HttpClient;
-import worker.WorkerConfiguration;
+import worker.configuration.WorkerConfiguration;
 
 public class GithubSearchWorkerData implements WorkerData<GithubSearchWorkerTarget> {
 

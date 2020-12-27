@@ -5,7 +5,7 @@ import interfaces.WorkerStorage;
 import io.r2dbc.h2.H2Connection;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import worker.WorkerConfiguration;
+import worker.configuration.WorkerConfiguration;
 
 import java.time.Duration;
 
@@ -59,4 +59,7 @@ public class H2WorkerStorage implements WorkerStorage<GithubSearchWorkerTarget> 
         return Flux.just();
     }
 
+    public Flux<String> getLatestIdentity(WorkerConfiguration configuration) {
+        return Flux.just();
+    }
 }
