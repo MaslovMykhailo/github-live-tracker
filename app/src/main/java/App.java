@@ -10,7 +10,8 @@ public class App {
         String host = "localhost";
         int port = 7000;
 
-        MssqlConnectionConfiguration configuration = MssqlConnectionConfiguration.builder()
+        MssqlConnectionConfiguration configuration = MssqlConnectionConfiguration
+            .builder()
             .build();
 
         Thread service = new Thread(() -> new Service(host, port, configuration).run());

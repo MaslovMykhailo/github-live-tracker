@@ -37,7 +37,8 @@ public class Unit {
         String host = "localhost";
         int port = 7000;
 
-        MssqlConnectionConfiguration configuration = MssqlConnectionConfiguration.builder()
+        MssqlConnectionConfiguration configuration = MssqlConnectionConfiguration
+            .builder()
             .build();
 
         new Unit(host, port, configuration).run();
@@ -62,6 +63,16 @@ public class Unit {
 
         workerData = new GithubSearchWorkerData(httpClient);
         workerStorage = new MssqlWorkerStorage(mssqlConnection);
+    }
+
+    public Unit(
+        RSocket rSocket,
+        WorkerData<GithubSearchWorkerTarget> workerData,
+        WorkerStorage<GithubSearchWorkerTarget> workerStorage
+    ) {
+        this.rSocket = rSocket;
+        this.workerData = workerData;
+        this.workerStorage = workerStorage;
     }
 
     private final Logger logger = Loggers.getLogger(Unit.class);
@@ -139,7 +150,7 @@ public class Unit {
             Duration.ofSeconds(90),
             10
         )
-    );s
+    );
 
     private Disposable workerPullDisposable = Disposables.disposed();
 
@@ -162,7 +173,6 @@ public class Unit {
         if (!workerPullDisposable.isDisposed()) {
             workerPullDisposable.dispose();
         }
-
 
         logger.info("Stop track keyword " + keyword);
     }

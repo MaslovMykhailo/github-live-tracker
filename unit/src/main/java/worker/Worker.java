@@ -48,7 +48,6 @@ public class Worker<T extends WorkerTarget> {
     private Mono<Void> persist(Flux<T> targets) {
         return targets
             .windowTimeout(configuration.getPageSize(), Duration.ofSeconds(10))
-            .onBackpressureBuffer()
             .flatMap(target -> storage.store(target, configuration))
             .then();
     }

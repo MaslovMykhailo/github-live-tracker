@@ -30,7 +30,8 @@ public class Service {
         String host = "localhost";
         int port = 7000;
 
-        MssqlConnectionConfiguration configuration = MssqlConnectionConfiguration.builder()
+        MssqlConnectionConfiguration configuration = MssqlConnectionConfiguration
+            .builder()
             .build();
 
         new Service(host, port, configuration).run();
