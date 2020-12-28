@@ -1,6 +1,7 @@
-package emitter;
+package implementations.polling;
 
 import interfaces.KeywordSourceStorage;
+import interfaces.KeywordSourceUpdateEmitter;
 import model.KeywordSource;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -12,7 +13,7 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
-public class KeywordSourceUpdateEmitter {
+public class KeywordSourcePollingUpdateEmitter implements KeywordSourceUpdateEmitter {
 
     private final KeywordSourceStorage storage;
 
@@ -20,7 +21,7 @@ public class KeywordSourceUpdateEmitter {
 
     private final Duration pollingInterval;
 
-    public KeywordSourceUpdateEmitter(
+    public KeywordSourcePollingUpdateEmitter(
         KeywordSourceStorage storage,
         Duration pollingInterval
     ) {

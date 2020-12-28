@@ -14,6 +14,9 @@ dependencies {
 
     implementation 'io.r2dbc:r2dbc-mssql:0.8.5.RELEASE'
 
+    implementation 'io.rsocket:rsocket-core:1.1.0'
+    implementation 'io.rsocket:rsocket-transport-netty:1.1.0'
+
     implementation "org.slf4j:slf4j-api:1.7.25"
     implementation "ch.qos.logback:logback-classic:1.2.3"
 }

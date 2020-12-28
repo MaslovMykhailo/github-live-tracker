@@ -1,7 +1,8 @@
 import cache.IdledSinksCache;
 import cache.KeywordSinksCache;
-import emitter.KeywordSourceUpdateEmitter;
+import implementations.polling.KeywordSourcePollingUpdateEmitter;
 import implementations.mssql.MssqlKeywordSourceStorage;
+import interfaces.KeywordSourceUpdateEmitter;
 import io.r2dbc.mssql.MssqlConnection;
 import io.r2dbc.mssql.MssqlConnectionConfiguration;
 import io.r2dbc.mssql.MssqlConnectionFactory;
@@ -14,6 +15,7 @@ import metadata.UnitPayloadMetadata;
 import model.KeywordSource;
 import org.reactivestreams.Publisher;
 import payload.ServicePayload;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
@@ -49,10 +51,15 @@ public class Service {
             .retryWhen(retrySpec)
             .block();
 
-        updateEmitter = new KeywordSourceUpdateEmitter(
+        updateEmitter = new KeywordSourcePollingUpdateEmitter(
             new MssqlKeywordSourceStorage(mssqlConnection),
             Duration.ofSeconds(10)
         );
+    }
+
+    public Service(TcpServerTransport serverTransport, KeywordSourceUpdateEmitter updateEmitter) {
+        this.serverTransport = serverTransport;
+        this.updateEmitter = updateEmitter;
     }
 
     private final Logger logger = Loggers.getLogger(Service.class);
@@ -66,7 +73,7 @@ public class Service {
     public void run() {
         logger.info("Service running...");
 
-        RSocketServer
+        Disposable server = RSocketServer
             .create(SocketAcceptor.forRequestChannel(this::onRequestChannel))
             .bind(serverTransport)
             .retryWhen(retrySpec)
@@ -83,6 +90,7 @@ public class Service {
             )
             .publishOn(Schedulers.parallel())
             .then()
+            .doFinally(signal -> server.dispose())
             .block();
     }
 

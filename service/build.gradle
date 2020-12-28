@@ -20,10 +20,16 @@ dependencies {
 
     compile "io.projectreactor:reactor-core:3.4.1"
     implementation "io.projectreactor:reactor-tools:3.4.1"
+
     testCompile "io.projectreactor:reactor-test:3.4.1"
+    testCompile "org.mockito:mockito-core:2.+"
 
     implementation "org.slf4j:slf4j-api:1.7.25"
     implementation "ch.qos.logback:logback-classic:1.2.3"
+}
+
+test {
+    useJUnitPlatform()
 }
 
 application {
