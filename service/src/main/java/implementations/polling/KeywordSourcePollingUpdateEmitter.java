@@ -42,15 +42,11 @@ public class KeywordSourcePollingUpdateEmitter implements KeywordSourceUpdateEmi
             .map(HashSet::new)
             .doOnNext(records -> {
                 difference(records, recordsCache)
-                    .stream()
-                    .parallel()
                     .forEach(record -> addedRecordsSink
                         .emitNext(record, Sinks.EmitFailureHandler.FAIL_FAST)
                     );
 
                 difference(recordsCache, records)
-                    .stream()
-                    .parallel()
                     .forEach(record -> removedRecordsSink
                         .emitNext(record, Sinks.EmitFailureHandler.FAIL_FAST)
                     );
