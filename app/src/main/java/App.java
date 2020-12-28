@@ -6,6 +6,9 @@ import java.util.stream.IntStream;
 
 public class App {
 
+    // The App module made just for proof of concept
+    // It runs Service and 3 Units as real world example
+
     public static void main(String[] args) throws InterruptedException {
         String host = "localhost";
         int port = 7000;
